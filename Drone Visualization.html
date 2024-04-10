@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <meta charset='utf-8' />
+  <title>drone_detection_amsterdam</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1' />
+  {/* Import Mapbox GL JS  */}
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
+  {/* Import Assembly */}
+  <link href='https://api.mapbox.com/mapbox-assembly/v1.3.0/assembly.min.css' rel='stylesheet'>
+  <script src='https://api.mapbox.com/mapbox-assembly/v1.3.0/assembly.js'></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  {/* Create a container for the map */}
+  <div id='map'></div>
+
+  
+  <div class='absolute fl my18 mx18 py12 px12 bg-gray-faint round'>
+    <form id='params'>
+      <h4 class='txt-m txt-bold mb6'>Drone data visualization:</h4>
+      <div class='mb8 mr8 toggle-group align-center'>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='Altitude' checked>
+          <div class='toggle toggle--active-null toggle--null'>Altitude</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='Drone types'>
+          <div class='toggle toggle--active-null toggle--null'>Drone types</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='Duration'>
+          <div class='toggle toggle--active-null toggle--null'>Duration</div>
+        </label>
+      </div>
+      <h4 class='txt-m txt-bold mb6'>Duration Filter (Min):</h4>
+      <div class='mb8 mr8 toggle-group align-center'>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='0-5'>
+          <div class='toggle toggle--active-null toggle--null'>0-5</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='5-10'>
+          <div class='toggle toggle--active-null toggle--null'>5-10</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='10-20'>
+          <div class='toggle toggle--active-null toggle--null'>10-20</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='20-60'>
+          <div class='toggle toggle--active-null toggle--null'>20-60</div>
+        </label>
+        <label class='toggle-container'>
+          <input name='Type' type='radio' value='More than an hour'>
+          <div class='toggle toggle--active-null toggle--null'>More than an hour</div>
+        </label>
+      </div>
+    </form>
+  </div>
+
+
+  <script>
+    // Add your Mapbox access token
+    mapboxgl.accessToken = 'pk.eyJ1IjoidG9tdmFuYXJtYW4iLCJhIjoiRDlFeWFVdyJ9.B6ZgpP0CsDlAF1D1emvosg';
+    const map = new mapboxgl.Map({
+      container: 'map', 
+      style: 'mapbox://styles/tomvanarman/clu1qdnzc006c01p6azty0hzm',
+      center: [4.9041, 52.3676], // Specify the starting position
+      zoom: 10, // Specify the starting zoom
+    });
+
+    // Target the "params" form in the HTML portion of your code
+    const params = document.getElementById('params');
+
+    map.on('load', () => {
+      // Add the vector tileset as a source.
+      map.addSource('ethnicity', {
+          type: 'vector',
+          url: 'mapbox://tomvanarman.d92iqns6'
+      });
+      // Altitude Circle
+      map.addLayer(
+        {
+          'id': 'AltitudeLayer',
+          'type': 'circle',
+          'source': 'ethnicity',
+          'source-layer': 'Cleaned_Data-9rf1ja',
+          'paint': {
+            'circle-radius': 3,
+            'circle-color': [
+              "interpolate",
+              ["linear"],
+              ["get", "Max Altitude"],
+              50,
+              "hsl(106, 99%, 52%)",
+              50.001,
+              "hsl(58, 100%, 52%)",
+              120,
+              "hsl(58, 99%, 52%)",
+              120.001,
+              "hsl(0, 99%, 52%)",
+              6549.7,
+              "hsl(0, 99%, 52%)"
+            ],
+            "circle-opacity": 0.75
+          }
+        }
+      );
+      // Duration HeatMap
+      map.addLayer(
+        {
+          'id': 'DurationLayer',
+          'type': 'heatmap',
+          'source': 'ethnicity',
+          'source-layer': 'Cleaned_Data-9rf1ja',
+          'layout': {"visibility": "none"},
+          'paint': {
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"], 0,
+              "rgba(0, 0, 255, 0)", 0.1,
+              "royalblue", 0.3,
+              "cyan", 0.5,
+              "lime", 0.7,
+              "yellow", 1,
+              "red"
+            ]
+          },
+      });
+      // Drone Type Text
+      map.addLayer(
+        {
+          "id": "DroneTypeLayer",
+          "type": "symbol",
+          "source": "ethnicity",
+          "source-layer": "Cleaned_Data-9rf1ja",
+          "paint": {
+            "text-color": [
+              "match",
+              ["get", "Drone Type"],
+              ["Mavic Mini 2"], "hsl(0, 74%, 55%)",
+              ["Mini 3 Pro"], "hsl(30, 74%, 55%)",
+              ["Mini 3"], "hsl(67, 74%, 55%)",
+              ["M300 RTK"], "hsl(99, 74%, 55%)",
+              ["Mavic 2"], "hsl(156, 74%, 55%)",
+              ["Mavic Air 2"], "hsl(202, 74%, 55%)",
+              ["Mavic 3"], "hsl(239, 74%, 55%)",
+              ["Mini 2 SE"], "hsl(263, 73%, 60%)",
+              ["Mavic Mini"],"hsl(299, 73%, 60%)",
+              ["FPV"], "hsl(335, 66%, 65%)",
+              "hsl(0, 3%, 67%)"
+            ]
+          },
+          "layout": {
+            "visibility": "none",
+            "text-field": [
+              "to-string",
+              ["match",
+              ["get", "Drone Type"],
+              ["Mavic Mini 2"], "Mavic Mini 2",
+              ["Mini 3 Pro"], "Mini 3 Pro",
+              ["Mini 3"], "Mini 3",
+              ["M300 RTK"], "M300 RTK",
+              ["Mavic 2"], "Mavic 2",
+              ["Mavic Air 2"], "Mavic Air 2",
+              ["Mavic 3"], "Mavic 3",
+              ["Mini 2 SE"], "Mini 2 SE",
+              ["Mavic Mini"],"Mavic Mini",
+              ["FPV"], "FPV",
+              "Others"]
+            ],
+            "text-size": [
+              "match",
+              [
+                "get",
+                "Drone Type"
+              ],
+              [ "Mavic Mini 2"],24,
+              ["Mini 3 Pro"], 20,
+              ["Mini 3"], 18,
+              14
+            ]
+          }
+        }
+	    );
+    });
+
+  params.addEventListener('change', (event) => {
+    if (event.target.value === "Altitude") {
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'visible');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DurationLayer', 'visibility', 'none');
+    } else if ( event.target.value === "Drone types"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'visible');
+      map.setLayoutProperty('DurationLayer', 'visibility', 'none');
+    } else if ( event.target.value === "Duration"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', null);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    } 
+    // Duration Heatmap filter
+    else if (event.target.value === "0-5"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', ['==', ['get', 'Duration'], '0-5']);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    } else if (event.target.value === "5-10"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', ['==', ['get', 'Duration'], '5-10']);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    } else if (event.target.value === "10-20"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', ['==', ['get', 'Duration'], '10-20']);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    } else if (event.target.value === "20-60"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', ['==', ['get', 'Duration'], '20-60']);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    } else if (event.target.value === "More than an hour"){
+      map.setLayoutProperty('AltitudeLayer', 'visibility', 'none');
+      map.setLayoutProperty('DroneTypeLayer', 'visibility', 'none');
+      map.setFilter('DurationLayer', ['==', ['get', 'Duration'], 'More than an hour']);
+      map.setLayoutProperty('DurationLayer', 'visibility', 'visible');
+    }
+  });
+
+</script>
+</body>
+</html>
